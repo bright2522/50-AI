@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>50-AI — AI 50 บุคลิก ทดสอบเว็บ/แอปให้คุณ</title>
+<style>
+  :root{
+    --bg:#faf7f2; --panel:#ffffff; --ink:#1c1a17; --ink-soft:#5b564e;
+    --accent:#c2410c; --accent-soft:#fde9dc; --line:#e7e1d8; --code-bg:#1e1b16; --code-ink:#f3ead9;
+    --chip:#f1ece2;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#151311; --panel:#1e1b17; --ink:#f3ede2; --ink-soft:#b8afa0;
+      --accent:#f2934f; --accent-soft:#3a2a1c; --line:#332e27; --code-bg:#0e0c0a; --code-ink:#f3ead9;
+      --chip:#2a251e;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#151311; --panel:#1e1b17; --ink:#f3ede2; --ink-soft:#b8afa0;
+    --accent:#f2934f; --accent-soft:#3a2a1c; --line:#332e27; --code-bg:#0e0c0a; --code-ink:#f3ead9;
+    --chip:#2a251e;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:"Segoe UI","Sarabun",system-ui,sans-serif;line-height:1.6;}
+  header.hero{padding:56px 20px 40px;text-align:center;max-width:900px;margin:0 auto;}
+  header.hero h1{font-size:clamp(28px,5vw,42px);margin:0 0 12px;}
+  header.hero p{color:var(--ink-soft);font-size:16px;max-width:640px;margin:0 auto;}
+  .badge-row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:20px;}
+  .badge{background:var(--chip);border:1px solid var(--line);border-radius:999px;padding:6px 14px;font-size:13px;color:var(--ink-soft);}
+  section{max-width:1100px;margin:0 auto;padding:36px 20px;}
+  h2{font-size:24px;border-left:4px solid var(--accent);padding-left:12px;margin-bottom:8px;}
+  .section-sub{color:var(--ink-soft);margin-top:0;margin-bottom:24px;font-size:14.5px;}
+
+  .filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;}
+  .filter-btn{background:var(--panel);border:1px solid var(--line);color:var(--ink);padding:7px 14px;border-radius:999px;font-size:13px;cursor:pointer;}
+  .filter-btn.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px;}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;}
+  .card .emoji{font-size:28px;}
+  .card h3{margin:8px 0 2px;font-size:16px;}
+  .card .cond{font-size:13px;color:var(--ink-soft);margin:0 0 10px;min-height:38px;}
+  .card .focus{display:flex;flex-wrap:wrap;gap:4px;}
+  .card .focus span{background:var(--accent-soft);color:var(--accent);font-size:11px;padding:3px 8px;border-radius:6px;}
+  .card .group-tag{font-size:11px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.03em;}
+
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:24px;}
+  label{font-size:13px;font-weight:600;display:block;margin:14px 0 6px;}
+  input[type="text"], input[type="password"], textarea, select{
+    width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--line);
+    background:var(--bg);color:var(--ink);font-size:14px;font-family:inherit;
+  }
+  textarea{min-height:120px;resize:vertical;}
+  .persona-picker{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;max-height:140px;overflow-y:auto;padding:8px;border:1px dashed var(--line);border-radius:10px;}
+  .persona-picker label{display:flex;align-items:center;gap:6px;font-weight:400;font-size:13px;background:var(--chip);padding:5px 10px;border-radius:999px;margin:0;cursor:pointer;}
+  .persona-picker input{width:auto;}
+  .btn{background:var(--accent);color:#fff;border:none;padding:12px 22px;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;margin-top:18px;}
+  .btn:disabled{opacity:.5;cursor:not-allowed;}
+  .btn.secondary{background:transparent;color:var(--accent);border:1px solid var(--accent);}
+  .hint{font-size:12.5px;color:var(--ink-soft);margin-top:6px;}
+  .results{margin-top:22px;display:flex;flex-direction:column;gap:12px;}
+  .result-card{border:1px solid var(--line);border-radius:12px;padding:14px 16px;background:var(--bg);}
+  .result-card h4{margin:0 0 6px;font-size:14.5px;}
+  .result-card p{margin:0;font-size:13.5px;color:var(--ink-soft);white-space:pre-wrap;}
+  .status{font-size:13px;color:var(--ink-soft);margin-top:10px;min-height:18px;}
+
+  .code-wrap{position:relative;}
+  pre{background:var(--code-bg);color:var(--code-ink);padding:20px;border-radius:14px;overflow-x:auto;font-size:12.8px;line-height:1.55;max-height:520px;}
+  code{font-family:"Cascadia Code","Fira Code",Consolas,monospace;}
+  .copy-btn{position:absolute;top:12px;right:12px;background:var(--accent);color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:12.5px;cursor:pointer;}
+  .tabs{display:flex;gap:6px;margin-bottom:10px;}
+  .tab-btn{background:var(--chip);border:1px solid var(--line);color:var(--ink);padding:6px 12px;border-radius:8px 8px 0 0;font-size:12.5px;cursor:pointer;}
+  .tab-btn.active{background:var(--code-bg);color:var(--code-ink);border-color:var(--code-bg);}
+  .steps{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 22px;margin-top:18px;}
+  .steps ol{margin:0;padding-left:20px;font-size:14px;color:var(--ink-soft);}
+  .steps code{background:var(--chip);color:var(--ink);padding:2px 6px;border-radius:5px;}
+  footer{text-align:center;padding:30px 20px 50px;color:var(--ink-soft);font-size:13px;}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <h1>🧑‍🤝‍🧑 50-AI</h1>
+  <p>ให้ "AI 50 บุคลิก" — เด็ก ผู้สูงอายุ ผู้ใหญ่ ผู้พิการ (ตาบอด หูหนวก) และผู้ป่วยโรคเรื้อรัง (เบาหวาน มะเร็ง ฯลฯ) — ช่วยทดลองใช้เว็บไซต์หรือแอปของคุณ แล้วคอมเมนต์ feedback กลับมาในมุมมองของแต่ละคน</p>
+  <div class="badge-row">
+    <span class="badge">50 personas</span>
+    <span class="badge">เปิดเว็บจริงด้วย Playwright</span>
+    <span class="badge">วิเคราะห์ด้วย Claude</span>
+    <span class="badge">โค้ดก็อปใช้ได้ทันที</span>
+  </div>
+</header>
+
+<section id="gallery">
+  <h2>บุคลิก AI ทั้ง 50 ตัว</h2>
+  <p class="section-sub">แต่ละตัวมีเงื่อนไขร่างกาย/สถานการณ์ต่างกัน จึงมองเห็นปัญหาการใช้งานคนละมุม</p>
+  <div class="filters" id="filters"></div>
+  <div class="grid" id="grid"></div>
+</section>
+
+<section id="demo">
+  <h2>ลองให้ AI ทดสอบจริง</h2>
+  <p class="section-sub">
+    วางลิงก์เว็บไซต์ + สรุปเนื้อหา/สิ่งที่อยู่บนหน้านั้น (เนื่องจากเบราว์เซอร์ไม่สามารถโหลดเนื้อหาข้ามโดเมนได้โดยตรง)
+    แล้วเลือกบุคลิกที่อยากให้ช่วยรีวิว ระบบจะเรียก Claude API ตรงจากเบราว์เซอร์ของคุณด้วย <b>API key ของคุณเอง</b>
+    (คีย์จะถูกเก็บไว้ในเครื่องคุณเท่านั้น ไม่ถูกส่งไปที่เซิร์ฟเวอร์อื่นใด)
+  </p>
+  <div class="panel">
+    <label for="apiKey">Anthropic API Key ของคุณ</label>
+    <input type="password" id="apiKey" placeholder="sk-ant-..." />
+    <p class="hint">รับคีย์ได้ที่ console.anthropic.com — ใช้เพื่อทดสอบเท่านั้น ระบบไม่บันทึกคีย์ของคุณไว้ที่ใด</p>
+
+    <label for="url">ลิงก์เว็บไซต์/แอปที่ต้องการทดสอบ</label>
+    <input type="text" id="url" placeholder="https://example.com" />
+
+    <label for="content">เนื้อหา/บริบทของหน้านั้น (ก็อปข้อความ หรืออธิบายสิ่งที่อยู่บนหน้าจอ)</label>
+    <textarea id="content" placeholder="เช่น: หน้าแรกของแอปซื้อตั๋วคอนเสิร์ต มีปุ่ม 'เลือกที่นั่ง' สีส้ม ตัวหนังสือขนาด 14px มีรูปผังที่นั่งแบบ SVG ไม่มีคำอธิบายข้อความกำกับ..."></textarea>
+
+    <label>เลือกบุคลิกที่จะให้รีวิว (แนะนำ 3-6 ตัวต่อครั้งเพื่อประหยัดโควตา API)</label>
+    <div class="persona-picker" id="personaPicker"></div>
+
+    <button class="btn" id="runBtn">▶ เริ่มให้ AI ทดสอบ</button>
+    <button class="btn secondary" id="clearBtn" type="button">ล้างผลลัพธ์</button>
+    <div class="status" id="status"></div>
+    <div class="results" id="results"></div>
+  </div>
+</section>
+
+<section id="code">
+  <h2>โค้ดเบื้องหลัง (ก็อปไปใช้ได้เลย)</h2>
+  <p class="section-sub">
+    เวอร์ชันเต็มที่ใช้ในดีโมนี้เปิดเว็บไซต์จริงด้วย Playwright (จำลองมือถือ ตรวจ alt text / ปุ่มไม่มี label / ปุ่มเล็กเกินไปอัตโนมัติ)
+    แล้วส่งให้ Claude เขียน feedback ในมุมมองของแต่ละบุคลิกทั้ง 50 ตัว รันบนเครื่องของคุณเองได้ทันที
+  </p>
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="engine">persona-review.mjs</button>
+    <button class="tab-btn" data-tab="pkg">package.json</button>
+    <button class="tab-btn" data-tab="personas">personas.json (ตัวอย่าง)</button>
+  </div>
+  <div class="code-wrap">
+    <button class="copy-btn" id="copyBtn">คัดลอกโค้ด</button>
+    <pre id="codeBox"><code id="codeContent"></code></pre>
+  </div>
+
+  <div class="steps">
+    <strong>วิธีรันบนเครื่องตัวเอง:</strong>
+    <ol>
+      <li>สร้างโฟลเดอร์โปรเจกต์ ก็อปไฟล์ทั้ง 3 ด้านบนลงไป (<code>personas.json</code> ต้องมีครบ 50 ตัว ดูตัวเต็มได้ใน repo)</li>
+      <li>รัน <code>npm install</code> แล้ว <code>npx playwright install chromium</code></li>
+      <li>ตั้งค่า <code>ANTHROPIC_API_KEY</code> เป็นคีย์ของคุณ</li>
+      <li>รัน <code>node persona-review.mjs https://your-site.com</code></li>
+      <li>ผลลัพธ์ feedback ทั้ง 50 บุคลิกจะถูกบันทึกเป็นไฟล์ <code>.md</code> และ <code>.json</code> ในโฟลเดอร์ <code>reports/</code></li>
+    </ol>
+  </div>
+</section>
+
+<footer>50-AI — โปรเจกต์เพื่อทดสอบการเข้าถึง (accessibility) และประสบการณ์ผู้ใช้ที่หลากหลาย</footer>
+
+<script src="personas.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

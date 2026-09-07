@@ -1,0 +1,14 @@
+{
+  "name": "50-ai-persona-review-engine",
+  "version": "1.0.0",
+  "description": "ให้ AI 50 บุคลิกเข้าไปทดลองใช้เว็บไซต์/แอปจริง แล้วให้ feedback ในมุมมองของแต่ละคน",
+  "type": "module",
+  "main": "persona-review.mjs",
+  "scripts": {
+    "review": "node persona-review.mjs"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.32.0",
+    "playwright": "^1.48.0"
+  }
+}
