@@ -28,30 +28,49 @@ function renderFilters() {
     b.className = "chip";
     b.setAttribute("aria-pressed", String(g === activeGroup));
     b.textContent = g ?? `ทั้งหมด (${personas.length})`;
-    b.onclick = () => { activeGroup = g; renderFilters(); renderGrid(); };
+    b.onclick = () => { if (g === activeGroup) return; activeGroup = g; renderFilters(); renderGrid(true); };
     box.appendChild(b);
   });
 }
 
-function renderGrid() {
+function renderGrid(animate) {
   const grid = $("grid");
-  grid.innerHTML = "";
-  personas.filter((p) => !activeGroup || p.group === activeGroup).forEach((p) => {
-    const c = document.createElement("button");
-    c.className = "card";
-    c.setAttribute("aria-pressed", String(selected.has(p.id)));
-    c.innerHTML = `<span class="tick"></span><h3>${p.name}</h3><p>${p.condition}</p><span class="tag"><i class="dot" style="background:${groupColor(p.group)}"></i>${p.group}</span>`;
-    c.onclick = () => {
-      selected.has(p.id) ? selected.delete(p.id) : selected.add(p.id);
+  const draw = () => {
+    const frag = document.createDocumentFragment();
+    personas.filter((p) => !activeGroup || p.group === activeGroup).forEach((p) => {
+      const c = document.createElement("button");
+      c.className = "card";
+      c.dataset.id = p.id;
       c.setAttribute("aria-pressed", String(selected.has(p.id)));
-      updateSelection();
-    };
-    grid.appendChild(c);
-  });
+      c.innerHTML = `<span class="tick"></span><h3>${p.name}</h3><p>${p.condition}</p><span class="tag"><i class="dot" style="background:${groupColor(p.group)}"></i>${p.group}</span>`;
+      frag.appendChild(c);
+    });
+    grid.replaceChildren(frag);
+  };
+  if (!animate) return draw();
+  grid.classList.add("swap");
+  setTimeout(() => { draw(); setTimeout(() => grid.classList.remove("swap"), 20); }, 160);
 }
 
+function syncCards() {
+  document.querySelectorAll(".card").forEach((c) =>
+    c.setAttribute("aria-pressed", String(selected.has(Number(c.dataset.id)))));
+}
+
+$("grid").addEventListener("click", (e) => {
+  const c = e.target.closest(".card");
+  if (!c) return;
+  const id = Number(c.dataset.id);
+  selected.has(id) ? selected.delete(id) : selected.add(id);
+  c.setAttribute("aria-pressed", String(selected.has(id)));
+  updateSelection();
+});
+
 function updateSelection() {
-  $("selCount").textContent = selected.size;
+  const n = $("selCount");
+  n.textContent = selected.size;
+  n.classList.add("bump");
+  setTimeout(() => n.classList.remove("bump"), 160);
   const list = personas.filter((p) => selected.has(p.id));
   $("picked").innerHTML = list.length
     ? list.map((p) => `<span>${p.name}</span>`).join("")
@@ -61,9 +80,9 @@ function updateSelection() {
 $("randomBtn").onclick = () => {
   selected.clear();
   [...personas].sort(() => Math.random() - 0.5).slice(0, 6).forEach((p) => selected.add(p.id));
-  renderGrid(); updateSelection();
+  syncCards(); updateSelection();
 };
-$("clearSel").onclick = () => { selected.clear(); renderGrid(); updateSelection(); };
+$("clearSel").onclick = () => { selected.clear(); syncCards(); updateSelection(); };
 
 renderFilters(); renderGrid(); updateSelection();
 
@@ -158,3 +177,14 @@ $("copyBtn").onclick = async () => {
   setTimeout(() => ($("copyBtn").textContent = "คัดลอก"), 1500);
 };
 loadTab("engine");
+
+// ---------- gentle reveal on scroll (one observer, runs once per element) ----------
+if ("IntersectionObserver" in window && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach((en) => { if (en.isIntersecting) { en.target.classList.add("in"); io.unobserve(en.target); } });
+  }, { rootMargin: "0px 0px -8% 0px" });
+  document.querySelectorAll(".sec-head, .panel, .tabs, .code-wrap, details.howto").forEach((el) => {
+    el.classList.add("js-reveal");
+    io.observe(el);
+  });
+}
