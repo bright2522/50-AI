@@ -76,7 +76,10 @@ section{padding:44px 0}
 .card:hover{transform:translateY(-2px);border-color:color-mix(in srgb,var(--accent) 50%,var(--line))}
 .card[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft);box-shadow:0 0 0 1px var(--accent)}
 .card .tick{position:absolute;top:14px;right:14px;width:20px;height:20px;border-radius:50%;border:1.5px solid var(--line)}
-.card[aria-pressed="true"] .tick{background:var(--accent);border-color:var(--accent);box-shadow:inset 0 0 0 4px var(--panel-solid)}
+.card[aria-pressed="true"] .tick{background:var(--accent);border-color:var(--accent)}
+.card .tick::after{content:"";position:absolute;left:6px;top:2px;width:5px;height:10px;border:solid var(--accent-ink);border-width:0 2px 2px 0;transform:rotate(45deg) scale(0);transition:transform .22s cubic-bezier(.3,1.7,.5,1)}
+.card[aria-pressed="true"] .tick::after{transform:rotate(45deg) scale(1)}
+.card::before{content:"";position:absolute;inset:-1px;border-radius:inherit;border:2px solid var(--accent);opacity:0;pointer-events:none}
 .card h3{margin:0 28px 4px 0;font-size:16.5px}
 .card p{margin:0;font-size:13.5px;color:var(--muted);line-height:1.5}
 .card .tag{display:flex;align-items:center;gap:6px;margin-top:12px;font-size:12.5px;color:var(--muted)}
@@ -135,3 +138,14 @@ footer{padding:40px 0 60px;color:var(--muted);font-size:13.5px;text-align:center
 .js-reveal{opacity:0;transform:translateY(14px);transition:opacity .5s ease,transform .5s cubic-bezier(.2,.7,.3,1)}
 .js-reveal.in{opacity:1;transform:none}
 @media (prefers-reduced-motion:reduce){.js-reveal{opacity:1;transform:none}.picked span,.res{animation:none}}
+
+/* selection animation: card pulse + expanding ring + popping tick */
+@keyframes card-pop{0%{transform:scale(1)}40%{transform:scale(1.035)}100%{transform:scale(1)}}
+@keyframes ring-out{0%{opacity:.85;transform:scale(1)}100%{opacity:0;transform:scale(1.12)}}
+@keyframes tick-pop{0%{transform:scale(.4)}60%{transform:scale(1.35)}100%{transform:scale(1)}}
+@keyframes card-off{0%{transform:scale(1)}45%{transform:scale(.965)}100%{transform:scale(1)}}
+.card.pop-on{animation:card-pop .38s cubic-bezier(.2,.7,.3,1) both}
+.card.pop-on::before{animation:ring-out .55s ease-out both}
+.card.pop-on .tick{animation:tick-pop .38s cubic-bezier(.3,1.5,.5,1) both}
+.card.pop-off{animation:card-off .25s ease both}
+@media (prefers-reduced-motion:reduce){.card.pop-on,.card.pop-on::before,.card.pop-on .tick,.card.pop-off{animation:none}}

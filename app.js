@@ -52,17 +52,38 @@ function renderGrid(animate) {
   setTimeout(() => { draw(); setTimeout(() => grid.classList.remove("swap"), 20); }, 160);
 }
 
+function animateCard(c, on, delay = 0) {
+  c.classList.remove("pop-on", "pop-off");
+  void c.offsetWidth; // restart the animation if it is still running
+  c.style.animationDelay = delay ? delay + "ms" : "";
+  c.classList.add(on ? "pop-on" : "pop-off");
+  c.addEventListener("animationend", function done(ev) {
+    if (ev.target !== c) return;
+    c.classList.remove("pop-on", "pop-off");
+    c.style.animationDelay = "";
+    c.removeEventListener("animationend", done);
+  });
+}
+
 function syncCards() {
-  document.querySelectorAll(".card").forEach((c) =>
-    c.setAttribute("aria-pressed", String(selected.has(Number(c.dataset.id)))));
+  let n = 0;
+  document.querySelectorAll(".card").forEach((c) => {
+    const was = c.getAttribute("aria-pressed") === "true";
+    const now = selected.has(Number(c.dataset.id));
+    if (was === now) return;
+    c.setAttribute("aria-pressed", String(now));
+    if (now) animateCard(c, true, n++ * 45); // newly picked cards pop one after another
+  });
 }
 
 $("grid").addEventListener("click", (e) => {
   const c = e.target.closest(".card");
   if (!c) return;
   const id = Number(c.dataset.id);
-  selected.has(id) ? selected.delete(id) : selected.add(id);
-  c.setAttribute("aria-pressed", String(selected.has(id)));
+  const on = !selected.has(id);
+  on ? selected.add(id) : selected.delete(id);
+  c.setAttribute("aria-pressed", String(on));
+  animateCard(c, on);
   updateSelection();
 });
 
