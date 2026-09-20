@@ -1,81 +1,82 @@
-// app.js — ตรรกะของหน้าเว็บ 50-AI
-// ใช้ window.PERSONAS จาก personas.js
-
+// app.js — ตรรกะหน้าเว็บ 50-AI (ใช้ window.PERSONAS จาก personas.js)
 const personas = window.PERSONAS || [];
-const groups = [...new Set(personas.map((p) => p.group))];
+const $ = (id) => document.getElementById(id);
+const selected = new Set([8, 6, 22, 11, 24, 43]); // ตัวอย่างเริ่มต้น: ตาบอด ผู้สูงอายุ เบาหวาน หูหนวก มะเร็ง กะดึก
+let activeGroup = null;
 
-// ---------- Gallery ----------
-const grid = document.getElementById("grid");
-const filtersEl = document.getElementById("filters");
+// ---------- theme ----------
+try {
+  const saved = localStorage.getItem("theme");
+  if (saved) document.documentElement.dataset.theme = saved;
+} catch {}
+$("themeBtn").onclick = () => {
+  const cur = document.documentElement.dataset.theme ||
+    (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+  const next = cur === "dark" ? "light" : "dark";
+  document.documentElement.dataset.theme = next;
+  try { localStorage.setItem("theme", next); } catch {}
+};
 
-function renderGrid(filter) {
-  grid.innerHTML = "";
-  const list = filter ? personas.filter((p) => p.group === filter) : personas;
-  for (const p of list) {
-    const card = document.createElement("div");
-    card.className = "card";
-    card.innerHTML = `
-      <div class="emoji">${p.emoji}</div>
-      <div class="group-tag">${p.group}</div>
-      <h3>${p.name}</h3>
-      <p class="cond">${p.condition}</p>
-      <div class="focus">${p.focus.map((f) => `<span>${f}</span>`).join("")}</div>
-    `;
-    grid.appendChild(card);
-  }
-}
-
+// ---------- personas ----------
 function renderFilters() {
-  const allBtn = document.createElement("button");
-  allBtn.className = "filter-btn active";
-  allBtn.textContent = `ทั้งหมด (${personas.length})`;
-  allBtn.onclick = () => setActive(allBtn, null);
-  filtersEl.appendChild(allBtn);
-
-  for (const g of groups) {
-    const count = personas.filter((p) => p.group === g).length;
-    const btn = document.createElement("button");
-    btn.className = "filter-btn";
-    btn.textContent = `${g} (${count})`;
-    btn.onclick = () => setActive(btn, g);
-    filtersEl.appendChild(btn);
-  }
+  const groups = [...new Set(personas.map((p) => p.group))];
+  const box = $("filters");
+  box.innerHTML = "";
+  [null, ...groups].forEach((g) => {
+    const b = document.createElement("button");
+    b.className = "chip";
+    b.setAttribute("aria-pressed", String(g === activeGroup));
+    b.textContent = g ?? `ทั้งหมด ${personas.length}`;
+    b.onclick = () => { activeGroup = g; renderFilters(); renderGrid(); };
+    box.appendChild(b);
+  });
 }
 
-function setActive(btn, group) {
-  document.querySelectorAll(".filter-btn").forEach((b) => b.classList.remove("active"));
-  btn.classList.add("active");
-  renderGrid(group);
+function renderGrid() {
+  const grid = $("grid");
+  grid.innerHTML = "";
+  personas.filter((p) => !activeGroup || p.group === activeGroup).forEach((p) => {
+    const c = document.createElement("button");
+    c.className = "card";
+    c.setAttribute("aria-pressed", String(selected.has(p.id)));
+    c.innerHTML = `<span class="tick">✓</span><div class="emoji">${p.emoji}</div><h3>${p.name}</h3><p>${p.condition}</p><span class="tag">${p.group}</span>`;
+    c.onclick = () => {
+      selected.has(p.id) ? selected.delete(p.id) : selected.add(p.id);
+      c.setAttribute("aria-pressed", String(selected.has(p.id)));
+      updateSelection();
+    };
+    grid.appendChild(c);
+  });
 }
 
-renderFilters();
-renderGrid(null);
-
-// ---------- Persona picker (demo section) ----------
-const picker = document.getElementById("personaPicker");
-const defaultPicked = [8, 6, 22, 11, 24, 43]; // ตัวอย่างที่คละกันดี: ตาบอด, ผู้สูงอายุ, เบาหวาน, หูหนวก, มะเร็ง, กะดึก
-for (const p of personas) {
-  const label = document.createElement("label");
-  label.innerHTML = `<input type="checkbox" value="${p.id}" ${defaultPicked.includes(p.id) ? "checked" : ""}/> ${p.emoji} ${p.name}`;
-  picker.appendChild(label);
+function updateSelection() {
+  $("selCount").textContent = selected.size;
+  const list = personas.filter((p) => selected.has(p.id));
+  $("picked").innerHTML = list.length
+    ? list.map((p) => `<span>${p.emoji} ${p.name}</span>`).join("")
+    : `<span style="background:none;color:var(--muted)">ยังไม่ได้เลือก — กลับไปเลือกด้านบน</span>`;
 }
 
-// ---------- Demo run (calls Anthropic API directly from the browser with the user's own key) ----------
-const runBtn = document.getElementById("runBtn");
-const clearBtn = document.getElementById("clearBtn");
-const statusEl = document.getElementById("status");
-const resultsEl = document.getElementById("results");
+$("randomBtn").onclick = () => {
+  selected.clear();
+  [...personas].sort(() => Math.random() - 0.5).slice(0, 6).forEach((p) => selected.add(p.id));
+  renderGrid(); updateSelection();
+};
+$("clearSel").onclick = () => { selected.clear(); renderGrid(); updateSelection(); };
 
-function buildPersonaPrompt(persona, url, content) {
-  return `คุณคือ "${persona.name}" (${persona.condition})
-สิ่งที่คุณให้ความสำคัญเป็นพิเศษเวลาทดลองใช้เว็บ/แอป: ${persona.focus.join(", ")}
-บุคลิกของคุณ: ${persona.voice}
+renderFilters(); renderGrid(); updateSelection();
+
+// ---------- run ----------
+function buildPrompt(p, url, content) {
+  return `คุณคือ "${p.name}" (${p.condition})
+สิ่งที่คุณให้ความสำคัญเป็นพิเศษเวลาทดลองใช้เว็บ/แอป: ${p.focus.join(", ")}
+บุคลิกของคุณ: ${p.voice}
 
 คุณกำลังทดลองเข้าใช้งานเว็บไซต์: ${url || "(ไม่ระบุลิงก์)"}
 เนื้อหา/บริบทของหน้านั้นที่ผู้ทดสอบสรุปมาให้: """${content}"""
 
-จงเขียน feedback สั้นๆ (3-5 ประโยค) ในน้ำเสียงของ "${persona.name}" เอง ว่าใช้งานแล้วรู้สึกอย่างไร
-เจอปัญหาอะไรที่กระทบกับสภาพร่างกาย/สถานการณ์ของตัวเอง และให้คะแนนความใช้งานง่าย (1-5)
+จงเขียน feedback สั้นๆ (3-5 ประโยค) ในน้ำเสียงของ "${p.name}" เอง ว่าใช้งานแล้วรู้สึกอย่างไร
+เจอปัญหาอะไรที่กระทบกับสภาพร่างกาย/สถานการณ์/ความเชี่ยวชาญของตัวเอง และให้คะแนนความใช้งานง่าย (1-5)
 ตอบเป็นภาษาไทยเท่านั้น ลงท้ายด้วยบรรทัด "คะแนน: X/5"`;
 }
 
@@ -94,87 +95,66 @@ async function callClaude(apiKey, prompt) {
       messages: [{ role: "user", content: prompt }],
     }),
   });
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`API error ${res.status}: ${errText.slice(0, 200)}`);
-  }
+  if (!res.ok) throw new Error(`API ${res.status}: ${(await res.text()).slice(0, 160)}`);
   const data = await res.json();
   return data.content?.[0]?.text ?? "(ไม่มีข้อความตอบกลับ)";
 }
 
-runBtn.addEventListener("click", async () => {
-  const apiKey = document.getElementById("apiKey").value.trim();
-  const url = document.getElementById("url").value.trim();
-  const content = document.getElementById("content").value.trim();
-  const checked = [...picker.querySelectorAll("input:checked")].map((i) => Number(i.value));
+$("runBtn").onclick = async () => {
+  const apiKey = $("apiKey").value.trim();
+  const url = $("url").value.trim();
+  const content = $("content").value.trim();
+  const status = $("status");
+  if (selected.size === 0) return (status.textContent = "กรุณาเลือกผู้ทดสอบอย่างน้อย 1 ตัว");
+  if (!content) return (status.textContent = "กรุณาอธิบายหน้าเว็บที่จะทดสอบ");
+  if (!apiKey) return (status.textContent = "กรุณาใส่ API key");
 
-  if (!apiKey) return (statusEl.textContent = "กรุณาใส่ Anthropic API key ก่อน");
-  if (!content) return (statusEl.textContent = "กรุณาใส่เนื้อหา/บริบทของหน้าเว็บก่อน");
-  if (checked.length === 0) return (statusEl.textContent = "กรุณาเลือกอย่างน้อย 1 บุคลิก");
+  const list = personas.filter((p) => selected.has(p.id));
+  const results = $("results");
+  results.innerHTML = "";
+  $("runBtn").disabled = true;
 
-  runBtn.disabled = true;
-  resultsEl.innerHTML = "";
-  const selected = personas.filter((p) => checked.includes(p.id));
-
-  for (const persona of selected) {
-    statusEl.textContent = `กำลังให้ ${persona.name} ทดสอบ... (${selected.indexOf(persona) + 1}/${selected.length})`;
-    const card = document.createElement("div");
-    card.className = "result-card";
-    card.innerHTML = `<h4>${persona.emoji} ${persona.name} — ${persona.condition}</h4><p>กำลังคิด...</p>`;
-    resultsEl.appendChild(card);
+  for (const [i, p] of list.entries()) {
+    status.textContent = `กำลังทดสอบ ${i + 1}/${list.length}: ${p.name}`;
+    const card = document.createElement("article");
+    card.className = "res";
+    card.innerHTML = `<header><h4>${p.emoji} ${p.name}</h4><span class="score"></span></header><p>กำลังคิด...</p>`;
+    results.appendChild(card);
     try {
-      const feedback = await callClaude(apiKey, buildPersonaPrompt(persona, url, content));
-      card.querySelector("p").textContent = feedback;
-    } catch (err) {
-      card.querySelector("p").textContent = `เกิดข้อผิดพลาด: ${err.message}`;
+      const text = await callClaude(apiKey, buildPrompt(p, url, content));
+      const m = text.match(/คะแนน:\s*(\d)/);
+      if (m) card.querySelector(".score").textContent = `${m[1]}/5`;
+      card.querySelector("p").textContent = text.replace(/\n*คะแนน:.*$/s, "").trim();
+    } catch (e) {
+      card.querySelector("p").textContent = `เกิดข้อผิดพลาด: ${e.message}`;
     }
   }
-  statusEl.textContent = `เสร็จสิ้น (${selected.length} บุคลิก)`;
-  runBtn.disabled = false;
-});
-
-clearBtn.addEventListener("click", () => {
-  resultsEl.innerHTML = "";
-  statusEl.textContent = "";
-});
-
-// ---------- Code showcase tabs ----------
-const codeContent = document.getElementById("codeContent");
-const tabButtons = document.querySelectorAll(".tab-btn");
-const copyBtn = document.getElementById("copyBtn");
-
-const fileMap = {
-  engine: "engine/persona-review.mjs",
-  pkg: "engine/package.json",
-  personas: "personas.json",
+  status.textContent = `เสร็จแล้ว ${list.length} ตัว`;
+  $("runBtn").disabled = false;
 };
 
+// ---------- code tabs ----------
+const files = { engine: "engine/persona-review.mjs", pkg: "engine/package.json", personas: "personas.json" };
+const codeEl = $("codeContent");
+
 async function loadTab(tab) {
-  codeContent.textContent = "กำลังโหลดโค้ด...";
+  document.querySelectorAll(".tabs .chip").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.tab === tab)));
+  codeEl.textContent = "กำลังโหลด...";
   try {
-    const res = await fetch(fileMap[tab]);
-    if (!res.ok) throw new Error("โหลดไฟล์ไม่สำเร็จ");
-    codeContent.textContent = await res.text();
-  } catch (err) {
-    codeContent.textContent =
-      `ไม่สามารถโหลดไฟล์ ${fileMap[tab]} ได้โดยตรง (${err.message})\n\n` +
-      `หากเปิดไฟล์นี้แบบ local (file://) เบราว์เซอร์จะบล็อกการโหลดไฟล์ข้าม ๆ กัน\n` +
-      `กรุณาเปิดผ่านเว็บเซิร์ฟเวอร์ (เช่น GitHub Pages หรือ 'npx serve') หรือดูไฟล์ต้นฉบับได้ที่ ${fileMap[tab]} ใน repo นี้โดยตรง`;
+    const r = await fetch(files[tab]);
+    if (!r.ok) throw new Error(r.status);
+    codeEl.textContent = await r.text();
+  } catch {
+    codeEl.textContent = `โหลด ${files[tab]} ไม่ได้ — กรุณาเปิดผ่านเว็บเซิร์ฟเวอร์ (เช่น npx serve .) แทนการเปิดไฟล์ตรงๆ`;
   }
 }
+document.querySelectorAll(".tabs .chip").forEach((b) => (b.onclick = () => loadTab(b.dataset.tab)));
 
-tabButtons.forEach((btn) => {
-  btn.addEventListener("click", () => {
-    tabButtons.forEach((b) => b.classList.remove("active"));
-    btn.classList.add("active");
-    loadTab(btn.dataset.tab);
-  });
-});
-
-copyBtn.addEventListener("click", async () => {
-  await navigator.clipboard.writeText(codeContent.textContent);
-  copyBtn.textContent = "คัดลอกแล้ว ✓";
-  setTimeout(() => (copyBtn.textContent = "คัดลอกโค้ด"), 1500);
-});
-
+$("copyBtn").onclick = async () => {
+  try {
+    await navigator.clipboard.writeText(codeEl.textContent);
+    $("copyBtn").textContent = "คัดลอกแล้ว ✓";
+  } catch { $("copyBtn").textContent = "คัดลอกไม่สำเร็จ"; }
+  setTimeout(() => ($("copyBtn").textContent = "คัดลอก"), 1500);
+};
 loadTab("engine");
