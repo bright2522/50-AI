@@ -80,8 +80,8 @@
         <div class="num">3</div>
         <div>
           <h3>API key ของคุณ</h3>
-          <input type="password" id="apiKey" placeholder="sk-ant-..." autocomplete="off" />
-          <p class="hint">ใช้ในเบราว์เซอร์นี้เท่านั้น ไม่ถูกเก็บและไม่ส่งไปที่อื่นนอกจาก Anthropic</p>
+          <input type="password" id="apiKey" placeholder="sk-ant-... หรือ sk-..." autocomplete="off" />
+          <p class="hint">ใช้ได้ทั้ง Claude (sk-ant-...) และ OpenAI (sk-...) ใช้ในเบราว์เซอร์นี้เท่านั้น ไม่ถูกเก็บ และส่งไปที่ค่ายของ key นั้นที่เดียว</p>
         </div>
       </div>
       <button class="btn" id="runBtn">เริ่มทดสอบ</button>
@@ -109,7 +109,7 @@
       <ol>
         <li>วางไฟล์ทั้งสามไว้ในโฟลเดอร์เดียวกัน แล้วรัน <code>npm install</code></li>
         <li>รัน <code>npx playwright install chromium</code></li>
-        <li>ตั้งค่า <code>ANTHROPIC_API_KEY</code> เป็น key ของคุณ</li>
+        <li>ตั้งค่า <code>ANTHROPIC_API_KEY</code> หรือ <code>OPENAI_API_KEY</code> อย่างใดอย่างหนึ่ง</li>
         <li>รัน <code>node persona-review.mjs https://your-site.com</code> แล้วดูผลในโฟลเดอร์ <code>reports/</code></li>
       </ol>
     </details>

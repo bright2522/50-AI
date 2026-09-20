@@ -120,24 +120,46 @@ function buildPrompt(p, url, content) {
 ตอบเป็นภาษาไทยที่พูดกันตามปกติ ไม่ต้องเป็นทางการ ลงท้ายด้วยบรรทัด "คะแนน: X/5"`;
 }
 
-async function callClaude(apiKey, prompt) {
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-      "anthropic-dangerous-direct-browser-access": "true",
-    },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-5-20250929",
-      max_tokens: 350,
-      messages: [{ role: "user", content: prompt }],
-    }),
-  });
-  if (!res.ok) throw new Error(`API ${res.status}: ${(await res.text()).slice(0, 160)}`);
-  const data = await res.json();
-  return data.content?.[0]?.text ?? "(ไม่มีข้อความตอบกลับ)";
+// เดาค่ายจากหน้าตาของ key: sk-ant-... = Claude, sk-... = OpenAI
+function detectProvider(key) {
+  if (key.startsWith("sk-ant-")) return "anthropic";
+  if (key.startsWith("sk-")) return "openai";
+  return null;
+}
+
+async function callModel(apiKey, prompt) {
+  const provider = detectProvider(apiKey);
+  let res, pick;
+  if (provider === "anthropic") {
+    res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+        "anthropic-dangerous-direct-browser-access": "true",
+      },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-5-20250929",
+        max_tokens: 350,
+        messages: [{ role: "user", content: prompt }],
+      }),
+    });
+    pick = (d) => d.content?.[0]?.text;
+  } else {
+    res = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: "Bearer " + apiKey },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        max_completion_tokens: 350,
+        messages: [{ role: "user", content: prompt }],
+      }),
+    });
+    pick = (d) => d.choices?.[0]?.message?.content;
+  }
+  if (!res.ok) throw new Error(`${res.status}: ${(await res.text()).slice(0, 160)}`);
+  return pick(await res.json()) ?? "(ไม่มีข้อความตอบกลับ)";
 }
 
 $("runBtn").onclick = async () => {
@@ -148,6 +170,7 @@ $("runBtn").onclick = async () => {
   if (selected.size === 0) return (status.textContent = "กรุณาเลือกอย่างน้อย 1 คนก่อนนะ");
   if (!content) return (status.textContent = "ช่วยเล่าหน่อยว่าหน้าเว็บที่จะทดสอบเป็นยังไง");
   if (!apiKey) return (status.textContent = "ใส่ API key ก่อนนะ");
+  if (!detectProvider(apiKey)) return (status.textContent = "key ต้องขึ้นต้นด้วย sk-ant- (Claude) หรือ sk- (OpenAI)");
 
   const list = personas.filter((p) => selected.has(p.id));
   const results = $("results");
@@ -161,7 +184,7 @@ $("runBtn").onclick = async () => {
     card.innerHTML = `<header><h4>${p.name}</h4><span class="score"></span></header><p>กำลังลองใช้...</p>`;
     results.appendChild(card);
     try {
-      const text = await callClaude(apiKey, buildPrompt(p, url, content));
+      const text = await callModel(apiKey, buildPrompt(p, url, content));
       const m = text.match(/คะแนน:\s*(\d)/);
       if (m) card.querySelector(".score").textContent = `${m[1]}/5`;
       card.querySelector("p").textContent = text.replace(/\n*คะแนน:.*$/s, "").trim();

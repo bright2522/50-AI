@@ -7,8 +7,9 @@
 // วิธีใช้:
 //   1. npm install
 //   2. npx playwright install chromium
-//   3. ตั้งค่า API key:  set ANTHROPIC_API_KEY=sk-ant-...   (Windows)
-//                        export ANTHROPIC_API_KEY=sk-ant-... (macOS/Linux)
+//   3. ตั้งค่า API key อย่างใดอย่างหนึ่ง (Claude หรือ OpenAI):
+//        set ANTHROPIC_API_KEY=sk-ant-...     (Windows)   export ANTHROPIC_API_KEY=sk-ant-...  (macOS/Linux)
+//        set OPENAI_API_KEY=sk-...            (Windows)   export OPENAI_API_KEY=sk-...         (macOS/Linux)
 //   4. node persona-review.mjs https://example.com
 //
 // ผลลัพธ์จะถูกบันทึกไว้ที่ ./reports/<โดเมน>-<เวลา>.json และ .md
@@ -78,13 +79,36 @@ function buildPrompt(persona, pageData, url) {
 ตอบเป็นภาษาไทยที่พูดกันตามปกติ ลงท้ายด้วยบรรทัด "คะแนน: X/5"`;
 }
 
-async function reviewWithPersona(client, persona, pageData, url) {
-  const message = await client.messages.create({
-    model: MODEL,
-    max_tokens: 400,
-    messages: [{ role: "user", content: buildPrompt(persona, pageData, url) }],
-  });
-  return message.content[0].text;
+// เลือกค่ายตาม key ที่ตั้งไว้ (ถ้ามีทั้งคู่ใช้ Claude)
+function makeModel() {
+  if (process.env.ANTHROPIC_API_KEY) {
+    const askModel = makeModel();
+    return async (prompt) => {
+      const m = await client.messages.create({
+        model: MODEL,
+        max_tokens: 400,
+        messages: [{ role: "user", content: prompt }],
+      });
+      return m.content[0].text;
+    };
+  }
+  return async (prompt) => {
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        max_completion_tokens: 400,
+        messages: [{ role: "user", content: prompt }],
+      }),
+    });
+    if (!res.ok) throw new Error(`${res.status}: ${(await res.text()).slice(0, 200)}`);
+    return (await res.json()).choices[0].message.content;
+  };
+}
+
+async function reviewWithPersona(askModel, persona, pageData, url) {
+  return askModel(buildPrompt(persona, pageData, url));
 }
 
 async function main() {
@@ -93,12 +117,12 @@ async function main() {
     console.error("ใช้งาน: node persona-review.mjs <URL>");
     process.exit(1);
   }
-  if (!process.env.ANTHROPIC_API_KEY) {
-    console.error("ตั้งค่า ANTHROPIC_API_KEY ก่อนรันนะ");
+  if (!process.env.ANTHROPIC_API_KEY && !process.env.OPENAI_API_KEY) {
+    console.error("ตั้งค่า ANTHROPIC_API_KEY หรือ OPENAI_API_KEY ก่อนรันนะ");
     process.exit(1);
   }
 
-  const client = new Anthropic();
+  const askModel = makeModel();
   const personas = await loadPersonas();
 
   console.log(`กำลังเปิดเว็บ ${url} ...`);
@@ -109,7 +133,7 @@ async function main() {
   for (const persona of personas) {
     process.stdout.write(`ให้ ${persona.name} ลองใช้... `);
     try {
-      const feedback = await reviewWithPersona(client, persona, pageData, url);
+      const feedback = await reviewWithPersona(askModel, persona, pageData, url);
       console.log("เสร็จ");
       results.push({ persona: persona.name, condition: persona.condition, feedback });
     } catch (err) {
