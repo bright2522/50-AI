@@ -1,8 +1,10 @@
-// app.js — ตรรกะหน้าเว็บ 50-AI (ใช้ window.PERSONAS จาก personas.js)
+// app.js — ตรรกะหน้าเว็บ Snap (ใช้ window.PERSONAS จาก personas.js)
 const personas = window.PERSONAS || [];
 const $ = (id) => document.getElementById(id);
 const selected = new Set([8, 6, 22, 11, 24, 43]); // ตัวอย่างเริ่มต้น: ตาบอด ผู้สูงอายุ เบาหวาน หูหนวก มะเร็ง กะดึก
 let activeGroup = null;
+const groupList = [...new Set(personas.map((p) => p.group))];
+const groupColor = (g) => `hsl(${(groupList.indexOf(g) * 47 + 14) % 360} 55% 50%)`;
 
 // ---------- theme ----------
 try {
@@ -26,7 +28,7 @@ function renderFilters() {
     const b = document.createElement("button");
     b.className = "chip";
     b.setAttribute("aria-pressed", String(g === activeGroup));
-    b.textContent = g ?? `ทั้งหมด ${personas.length}`;
+    b.textContent = g ?? `ทั้งหมด (${personas.length})`;
     b.onclick = () => { activeGroup = g; renderFilters(); renderGrid(); };
     box.appendChild(b);
   });
@@ -39,7 +41,7 @@ function renderGrid() {
     const c = document.createElement("button");
     c.className = "card";
     c.setAttribute("aria-pressed", String(selected.has(p.id)));
-    c.innerHTML = `<span class="tick">✓</span><div class="emoji">${p.emoji}</div><h3>${p.name}</h3><p>${p.condition}</p><span class="tag">${p.group}</span>`;
+    c.innerHTML = `<span class="tick"></span><h3>${p.name}</h3><p>${p.condition}</p><span class="tag"><i class="dot" style="background:${groupColor(p.group)}"></i>${p.group}</span>`;
     c.onclick = () => {
       selected.has(p.id) ? selected.delete(p.id) : selected.add(p.id);
       c.setAttribute("aria-pressed", String(selected.has(p.id)));
@@ -53,8 +55,8 @@ function updateSelection() {
   $("selCount").textContent = selected.size;
   const list = personas.filter((p) => selected.has(p.id));
   $("picked").innerHTML = list.length
-    ? list.map((p) => `<span>${p.emoji} ${p.name}</span>`).join("")
-    : `<span style="background:none;color:var(--muted)">ยังไม่ได้เลือก — กลับไปเลือกด้านบน</span>`;
+    ? list.map((p) => `<span>${p.name}</span>`).join("")
+    : `<span style="background:none;color:var(--muted)">ยังไม่ได้เลือกใคร กลับไปเลือกด้านบนก่อนนะ</span>`;
 }
 
 $("randomBtn").onclick = () => {
@@ -69,15 +71,14 @@ renderFilters(); renderGrid(); updateSelection();
 // ---------- run ----------
 function buildPrompt(p, url, content) {
   return `คุณคือ "${p.name}" (${p.condition})
-สิ่งที่คุณให้ความสำคัญเป็นพิเศษเวลาทดลองใช้เว็บ/แอป: ${p.focus.join(", ")}
-บุคลิกของคุณ: ${p.voice}
+เวลาลองใช้เว็บหรือแอป คุณใส่ใจเรื่อง: ${p.focus.join(", ")}
+ลักษณะของคุณ: ${p.voice}
 
-คุณกำลังทดลองเข้าใช้งานเว็บไซต์: ${url || "(ไม่ระบุลิงก์)"}
-เนื้อหา/บริบทของหน้านั้นที่ผู้ทดสอบสรุปมาให้: """${content}"""
+คุณกำลังลองใช้เว็บ: ${url || "(ไม่ได้ระบุลิงก์)"}
+รายละเอียดของหน้านั้นที่ผู้ทดสอบเล่าให้ฟัง: """${content}"""
 
-จงเขียน feedback สั้นๆ (3-5 ประโยค) ในน้ำเสียงของ "${p.name}" เอง ว่าใช้งานแล้วรู้สึกอย่างไร
-เจอปัญหาอะไรที่กระทบกับสภาพร่างกาย/สถานการณ์/ความเชี่ยวชาญของตัวเอง และให้คะแนนความใช้งานง่าย (1-5)
-ตอบเป็นภาษาไทยเท่านั้น ลงท้ายด้วยบรรทัด "คะแนน: X/5"`;
+เขียนความเห็นสั้นๆ 3-5 ประโยค ด้วยน้ำเสียงของ "${p.name}" เอง เล่าว่าใช้แล้วรู้สึกยังไง เจอปัญหาอะไรที่เกี่ยวกับสภาพหรือสถานการณ์ของตัวเอง แล้วให้คะแนนความใช้ง่าย 1-5
+ตอบเป็นภาษาไทยที่พูดกันตามปกติ ไม่ต้องเป็นทางการ ลงท้ายด้วยบรรทัด "คะแนน: X/5"`;
 }
 
 async function callClaude(apiKey, prompt) {
@@ -105,9 +106,9 @@ $("runBtn").onclick = async () => {
   const url = $("url").value.trim();
   const content = $("content").value.trim();
   const status = $("status");
-  if (selected.size === 0) return (status.textContent = "กรุณาเลือกผู้ทดสอบอย่างน้อย 1 ตัว");
-  if (!content) return (status.textContent = "กรุณาอธิบายหน้าเว็บที่จะทดสอบ");
-  if (!apiKey) return (status.textContent = "กรุณาใส่ API key");
+  if (selected.size === 0) return (status.textContent = "กรุณาเลือกอย่างน้อย 1 คนก่อนนะ");
+  if (!content) return (status.textContent = "ช่วยเล่าหน่อยว่าหน้าเว็บที่จะทดสอบเป็นยังไง");
+  if (!apiKey) return (status.textContent = "ใส่ API key ก่อนนะ");
 
   const list = personas.filter((p) => selected.has(p.id));
   const results = $("results");
@@ -115,10 +116,10 @@ $("runBtn").onclick = async () => {
   $("runBtn").disabled = true;
 
   for (const [i, p] of list.entries()) {
-    status.textContent = `กำลังทดสอบ ${i + 1}/${list.length}: ${p.name}`;
+    status.textContent = `กำลังให้ ${p.name} ลองใช้ (${i + 1}/${list.length})`;
     const card = document.createElement("article");
     card.className = "res";
-    card.innerHTML = `<header><h4>${p.emoji} ${p.name}</h4><span class="score"></span></header><p>กำลังคิด...</p>`;
+    card.innerHTML = `<header><h4>${p.name}</h4><span class="score"></span></header><p>กำลังลองใช้...</p>`;
     results.appendChild(card);
     try {
       const text = await callClaude(apiKey, buildPrompt(p, url, content));
@@ -126,10 +127,10 @@ $("runBtn").onclick = async () => {
       if (m) card.querySelector(".score").textContent = `${m[1]}/5`;
       card.querySelector("p").textContent = text.replace(/\n*คะแนน:.*$/s, "").trim();
     } catch (e) {
-      card.querySelector("p").textContent = `เกิดข้อผิดพลาด: ${e.message}`;
+      card.querySelector("p").textContent = `มีปัญหา: ${e.message}`;
     }
   }
-  status.textContent = `เสร็จแล้ว ${list.length} ตัว`;
+  status.textContent = `เสร็จแล้ว ทั้ง ${list.length} คน`;
   $("runBtn").disabled = false;
 };
 
@@ -145,7 +146,7 @@ async function loadTab(tab) {
     if (!r.ok) throw new Error(r.status);
     codeEl.textContent = await r.text();
   } catch {
-    codeEl.textContent = `โหลด ${files[tab]} ไม่ได้ — กรุณาเปิดผ่านเว็บเซิร์ฟเวอร์ (เช่น npx serve .) แทนการเปิดไฟล์ตรงๆ`;
+    codeEl.textContent = `เปิดไฟล์ ${files[tab]} ไม่ได้ ลองเปิดหน้านี้ผ่านเซิร์ฟเวอร์ เช่น npx serve . แทนการดับเบิลคลิกไฟล์`;
   }
 }
 document.querySelectorAll(".tabs .chip").forEach((b) => (b.onclick = () => loadTab(b.dataset.tab)));
@@ -153,8 +154,8 @@ document.querySelectorAll(".tabs .chip").forEach((b) => (b.onclick = () => loadT
 $("copyBtn").onclick = async () => {
   try {
     await navigator.clipboard.writeText(codeEl.textContent);
-    $("copyBtn").textContent = "คัดลอกแล้ว ✓";
-  } catch { $("copyBtn").textContent = "คัดลอกไม่สำเร็จ"; }
+    $("copyBtn").textContent = "คัดลอกแล้ว";
+  } catch { $("copyBtn").textContent = "คัดลอกไม่ได้"; }
   setTimeout(() => ($("copyBtn").textContent = "คัดลอก"), 1500);
 };
 loadTab("engine");

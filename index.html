@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>50-AI — ผู้ใช้ 50 แบบ ทดสอบเว็บของคุณ</title>
-<meta name="description" content="AI 50 บุคลิก ทั้งเด็ก ผู้สูงอายุ ผู้พิการ ผู้ป่วย คนทั่วไป และผู้เชี่ยวชาญ ช่วยลองใช้เว็บ/แอปแล้วให้ feedback" />
+<title>Snap — ลองเว็บของคุณกับผู้ใช้ 50 แบบ</title>
+<meta name="description" content="เลือกผู้ใช้จำลอง 50 แบบ ทั้งเด็ก ผู้สูงอายุ ผู้พิการ ผู้ป่วย คนทั่วไป และผู้เชี่ยวชาญ แล้วดูว่าแต่ละคนเจอปัญหาอะไรกับเว็บของคุณ" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600&family=Noto+Serif+Thai:wght@600;700&display=swap" rel="stylesheet" />
@@ -14,76 +14,76 @@
 
 <nav class="nav">
   <div class="wrap">
-    <a class="brand" href="#top">50-AI</a>
+    <a class="brand" href="#top">Snap</a>
     <div class="nav-links">
-      <a href="#personas">บุคลิก</a>
-      <a href="#try">ลองใช้</a>
+      <a href="#personas">ผู้ใช้จำลอง</a>
+      <a href="#try">ทดสอบ</a>
       <a href="#code">โค้ด</a>
-      <button class="icon-btn" id="themeBtn" aria-label="สลับโหมดสว่าง/มืด">◐</button>
+      <button class="icon-btn" id="themeBtn" aria-label="สลับโหมดสว่างและมืด">◐</button>
     </div>
   </div>
 </nav>
 
 <main class="wrap" id="top">
   <header class="hero">
-    <h1>ให้ผู้ใช้ <em>50 แบบ</em> ช่วยลองเว็บของคุณ</h1>
-    <p>ตั้งแต่เด็ก ผู้สูงอายุ ผู้พิการ ผู้ป่วย คนทั่วไป ไปจนถึงผู้เชี่ยวชาญ ทุกคนลองใช้แล้วบอกว่าเจอปัญหาอะไร</p>
+    <h1>ลองเว็บของคุณกับ <em>ผู้ใช้ 50 แบบ</em></h1>
+    <p>เลือกผู้ใช้จำลอง ใส่เว็บที่อยากทดสอบ แล้วดูว่าแต่ละคนเจอปัญหาอะไรบ้าง</p>
     <div class="cta">
-      <a class="btn" href="#personas">เลือกบุคลิก</a>
+      <a class="btn" href="#personas">เริ่มเลย</a>
       <a class="btn ghost" href="#code">ดูโค้ด</a>
     </div>
   </header>
 
   <section id="personas">
     <div class="sec-head">
-      <h2>1. เลือกผู้ทดสอบ</h2>
-      <p>คลิกการ์ดเพื่อเลือก แนะนำ 3–6 ตัวต่อครั้ง</p>
+      <h2>เลือกผู้ใช้จำลอง</h2>
+      <p>แตะที่การ์ดเพื่อเลือก ครั้งละ 3–6 คนกำลังดี</p>
     </div>
     <div class="toolbar">
       <div class="filters" id="filters" role="group" aria-label="กรองตามกลุ่ม"></div>
       <div class="tools">
-        <button class="btn ghost small" id="randomBtn">สุ่ม 6 ตัว</button>
-        <button class="btn ghost small" id="clearSel">ล้างที่เลือก</button>
+        <button class="btn ghost small" id="randomBtn">สุ่ม 6 คน</button>
+        <button class="btn ghost small" id="clearSel">ล้างทั้งหมด</button>
       </div>
     </div>
     <div class="grid" id="grid"></div>
     <div class="selbar">
-      <span>เลือกแล้ว <b id="selCount">0</b> ตัว</span>
-      <a class="btn small" href="#try">ไปขั้นต่อไป →</a>
+      <span>เลือกแล้ว <b id="selCount">0</b> คน</span>
+      <a class="btn small" href="#try">ต่อไป</a>
     </div>
   </section>
 
   <section id="try">
     <div class="sec-head">
-      <h2>2. ให้ AI ลองใช้</h2>
-      <p>ใส่ข้อมูลเว็บของคุณ แล้วกดเริ่ม</p>
+      <h2>ทดสอบเว็บของคุณ</h2>
+      <p>เล่าว่าเว็บของคุณเป็นยังไง แล้วกดเริ่มได้เลย</p>
     </div>
     <div class="panel">
       <div class="step">
         <div class="num">1</div>
         <div>
-          <h3>เว็บไซต์ที่จะทดสอบ</h3>
+          <h3>เว็บที่อยากทดสอบ</h3>
           <input type="text" id="url" placeholder="https://example.com" />
-          <p class="hint">เบราว์เซอร์โหลดเว็บข้ามโดเมนไม่ได้ กรุณาวางข้อความหรืออธิบายหน้าเว็บด้านล่าง</p>
-          <textarea id="content" placeholder="เช่น หน้าแรกแอปขายตั๋วคอนเสิร์ต มีปุ่ม 'เลือกที่นั่ง' สีส้ม ตัวหนังสือ 14px ผังที่นั่งเป็นรูปภาพไม่มีคำอธิบาย"></textarea>
+          <p class="hint">เบราว์เซอร์อ่านเว็บอื่นให้ไม่ได้ ช่วยพิมพ์หรือวางข้อความในหน้านั้นให้หน่อย</p>
+          <textarea id="content" placeholder="เช่น หน้าแรกของแอปขายตั๋วคอนเสิร์ต มีปุ่ม “เลือกที่นั่ง” สีส้ม ตัวหนังสือเล็ก และผังที่นั่งเป็นรูปภาพที่ไม่มีคำอธิบาย"></textarea>
         </div>
       </div>
       <div class="step">
         <div class="num">2</div>
         <div>
-          <h3>ผู้ทดสอบที่เลือก</h3>
+          <h3>คนที่เลือกไว้</h3>
           <div class="picked" id="picked"></div>
         </div>
       </div>
       <div class="step">
         <div class="num">3</div>
         <div>
-          <h3>Anthropic API key ของคุณ</h3>
+          <h3>API key ของคุณ</h3>
           <input type="password" id="apiKey" placeholder="sk-ant-..." autocomplete="off" />
-          <p class="hint">ใช้เฉพาะในเบราว์เซอร์นี้ ไม่ถูกบันทึกหรือส่งไปที่อื่นนอกจาก api.anthropic.com</p>
+          <p class="hint">ใช้ในเบราว์เซอร์นี้เท่านั้น ไม่ถูกเก็บและไม่ส่งไปที่อื่นนอกจาก Anthropic</p>
         </div>
       </div>
-      <button class="btn" id="runBtn">▶ เริ่มทดสอบ</button>
+      <button class="btn" id="runBtn">เริ่มทดสอบ</button>
       <p class="status" id="status" role="status" aria-live="polite"></p>
       <div class="results" id="results"></div>
     </div>
@@ -91,8 +91,8 @@
 
   <section id="code">
     <div class="sec-head">
-      <h2>3. โค้ดสำหรับรันเอง</h2>
-      <p>เวอร์ชันเต็มเปิดเว็บจริงด้วย Playwright แล้วให้ทั้ง 50 บุคลิกรีวิว ก็อปไปใช้ได้เลย</p>
+      <h2>เอาไปรันเอง</h2>
+      <p>อยากให้ทั้ง 50 คนลองเว็บจริงๆ ก็อปโค้ดนี้ไปรันในเครื่องได้เลย</p>
     </div>
     <div class="tabs" role="tablist">
       <button class="chip" role="tab" aria-pressed="true" data-tab="engine">persona-review.mjs</button>
@@ -104,18 +104,18 @@
       <pre><code id="codeContent"></code></pre>
     </div>
     <details class="howto">
-      <summary>วิธีรัน 4 ขั้นตอน</summary>
+      <summary>รันยังไง</summary>
       <ol>
-        <li>วางไฟล์ทั้งสามในโฟลเดอร์เดียวกัน แล้วรัน <code>npm install</code></li>
+        <li>วางไฟล์ทั้งสามไว้ในโฟลเดอร์เดียวกัน แล้วรัน <code>npm install</code></li>
         <li>รัน <code>npx playwright install chromium</code></li>
-        <li>ตั้งค่า <code>ANTHROPIC_API_KEY</code></li>
-        <li>รัน <code>node persona-review.mjs https://your-site.com</code> ผลลัพธ์อยู่ในโฟลเดอร์ <code>reports/</code></li>
+        <li>ตั้งค่า <code>ANTHROPIC_API_KEY</code> เป็น key ของคุณ</li>
+        <li>รัน <code>node persona-review.mjs https://your-site.com</code> แล้วดูผลในโฟลเดอร์ <code>reports/</code></li>
       </ol>
     </details>
   </section>
 </main>
 
-<footer>50-AI · ทดสอบการเข้าถึงและประสบการณ์ผู้ใช้ที่หลากหลาย</footer>
+<footer>Snap</footer>
 
 <script src="personas.js"></script>
 <script src="app.js"></script>

@@ -65,12 +65,12 @@ section{padding:40px 0}
 .card{position:relative;text-align:left;background:var(--surface);border:1.5px solid var(--line);border-radius:var(--radius);padding:16px;cursor:pointer;color:inherit;transition:transform .15s,border-color .15s,box-shadow .15s}
 .card:hover{transform:translateY(-2px);border-color:var(--muted)}
 .card[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft);box-shadow:0 0 0 1px var(--accent)}
-.card .tick{position:absolute;top:12px;right:12px;width:22px;height:22px;border-radius:50%;border:1.5px solid var(--line);display:grid;place-items:center;font-size:13px;color:transparent}
-.card[aria-pressed="true"] .tick{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
-.card .emoji{font-size:30px;line-height:1}
-.card h3{margin:10px 0 2px;font-size:16px}
+.card .tick{position:absolute;top:14px;right:14px;width:20px;height:20px;border-radius:50%;border:1.5px solid var(--line)}
+.card[aria-pressed="true"] .tick{background:var(--accent);border-color:var(--accent);box-shadow:inset 0 0 0 4px var(--accent-soft)}
+.card h3{margin:0 28px 4px 0;font-size:16.5px}
 .card p{margin:0;font-size:13.5px;color:var(--muted);line-height:1.5}
-.card .tag{display:inline-block;margin-top:10px;font-size:12px;color:var(--accent)}
+.card .tag{display:flex;align-items:center;gap:6px;margin-top:12px;font-size:12.5px;color:var(--muted)}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block}
 
 /* selection bar */
 .selbar{position:sticky;bottom:16px;z-index:10;margin-top:22px;background:var(--ink);color:var(--bg);border-radius:999px;padding:10px 10px 10px 22px;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 10px 30px rgba(0,0,0,.22)}

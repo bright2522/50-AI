@@ -1,8 +1,8 @@
 // persona-review.mjs
 //
-// เครื่องมือให้ "AI 50 บุคลิก" (เด็ก/ผู้สูงอายุ/ผู้พิการ/ผู้ป่วยโรคเรื้อรัง ฯลฯ)
+// Snap: ผู้ใช้จำลอง 50 แบบ (เด็ก/ผู้สูงอายุ/ผู้พิการ/ผู้ป่วยโรคเรื้อรัง ฯลฯ)
 // เข้าไปเปิดเว็บไซต์หรือแอปจริงด้วย Playwright แล้วให้ Claude วิเคราะห์และเขียน
-// feedback ในมุมมองของแต่ละบุคลิก บันทึกผลเป็นไฟล์ Markdown/JSON
+// ความเห็นในมุมมองของแต่ละคน แล้วบันทึกผลเป็นไฟล์ Markdown/JSON
 //
 // วิธีใช้:
 //   1. npm install
@@ -60,22 +60,22 @@ async function capturePage(url) {
 
 function buildPrompt(persona, pageData, url) {
   return `คุณคือ "${persona.name}" (${persona.condition})
-สิ่งที่คุณให้ความสำคัญเป็นพิเศษเวลาทดลองใช้เว็บ/แอป: ${persona.focus.join(", ")}
-บุคลิกของคุณ: ${persona.voice}
+เวลาลองใช้เว็บหรือแอป คุณใส่ใจเรื่อง: ${persona.focus.join(", ")}
+ลักษณะของคุณ: ${persona.voice}
 
-คุณกำลังทดลองเข้าใช้งานเว็บไซต์: ${url}
+คุณกำลังลองใช้เว็บ: ${url}
 ชื่อหน้า: ${pageData.title}
 
-ข้อมูลเชิงเทคนิคที่ตรวจพบอัตโนมัติ (ใช้ประกอบการให้ความเห็น ไม่ต้องท่องซ้ำทั้งหมด):
+สิ่งที่ระบบตรวจเจอเบื้องต้น (ใช้ประกอบได้ ไม่ต้องเล่าซ้ำทั้งหมด):
 - รูปภาพที่ไม่มี alt text: ${pageData.imagesMissingAlt} รูป
 - ปุ่ม/ลิงก์ที่ไม่มีชื่อสำหรับโปรแกรมอ่านหน้าจอ: ${pageData.buttonsWithoutLabel} จุด
 - ปุ่มที่มีขนาดเล็กกว่ามาตรฐานการแตะ (44x44px): ${pageData.smallTapTargets} จุด
 
-เนื้อหาบนหน้าเว็บ (ตัดมาบางส่วน): """${pageData.visibleText.slice(0, 1500)}"""
+ข้อความบนหน้าเว็บ (ตัดมาบางส่วน): """${pageData.visibleText.slice(0, 1500)}"""
 
-จงเขียน feedback สั้นๆ (4-6 ประโยค) ในน้ำเสียงของ "${persona.name}" เอง เล่าว่าใช้งานเว็บนี้แล้วรู้สึกอย่างไร
-เจอปัญหาอะไรที่กระทบกับสภาพร่างกาย/สถานการณ์ของตัวเอง และให้คะแนนความใช้งานง่าย (1-5)
-ตอบเป็นภาษาไทย ลงท้ายด้วยบรรทัด "คะแนน: X/5"`;
+เขียนความเห็นสั้นๆ 4-6 ประโยค ด้วยน้ำเสียงของ "${persona.name}" เอง เล่าว่าใช้เว็บนี้แล้วรู้สึกยังไง
+เจอปัญหาอะไรที่เกี่ยวกับสภาพหรือสถานการณ์ของตัวเอง แล้วให้คะแนนความใช้ง่าย 1-5
+ตอบเป็นภาษาไทยที่พูดกันตามปกติ ลงท้ายด้วยบรรทัด "คะแนน: X/5"`;
 }
 
 async function reviewWithPersona(client, persona, pageData, url) {
@@ -94,20 +94,20 @@ async function main() {
     process.exit(1);
   }
   if (!process.env.ANTHROPIC_API_KEY) {
-    console.error("กรุณาตั้งค่า ANTHROPIC_API_KEY ก่อนรัน");
+    console.error("ตั้งค่า ANTHROPIC_API_KEY ก่อนรันนะ");
     process.exit(1);
   }
 
   const client = new Anthropic();
   const personas = await loadPersonas();
 
-  console.log(`กำลังเปิดเว็บไซต์ ${url} ...`);
+  console.log(`กำลังเปิดเว็บ ${url} ...`);
   const pageData = await capturePage(url);
-  console.log(`พบปัญหาเบื้องต้น: alt text ขาด ${pageData.imagesMissingAlt}, ปุ่มไม่มีชื่อ ${pageData.buttonsWithoutLabel}, ปุ่มเล็กเกินไป ${pageData.smallTapTargets}`);
+  console.log(`ตรวจเจอเบื้องต้น: รูปไม่มี alt ${pageData.imagesMissingAlt}, ปุ่มไม่มีชื่อ ${pageData.buttonsWithoutLabel}, ปุ่มเล็กเกินไป ${pageData.smallTapTargets}`);
 
   const results = [];
   for (const persona of personas) {
-    process.stdout.write(`ให้ ${persona.name} (${persona.condition}) ทดลองใช้... `);
+    process.stdout.write(`ให้ ${persona.name} ลองใช้... `);
     try {
       const feedback = await reviewWithPersona(client, persona, pageData, url);
       console.log("เสร็จ");
@@ -132,15 +132,15 @@ async function main() {
 
   const mdPath = path.join(outDir, `${domain}-${stamp}.md`);
   const md = [
-    `# รายงาน feedback จาก AI 50 บุคลิก`,
+    `# รายงานจาก Snap: ผู้ใช้จำลอง 50 แบบ`,
     `เว็บไซต์: ${url}`,
     `วันที่: ${stamp}`,
     "",
-    ...results.map((r) => `## ${r.persona} — ${r.condition}\n\n${r.feedback ?? `(เกิดข้อผิดพลาด: ${r.error})`}\n`),
+    ...results.map((r) => `## ${r.persona} — ${r.condition}\n\n${r.feedback ?? `(มีปัญหา: ${r.error})`}\n`),
   ].join("\n");
   await fs.writeFile(mdPath, md, "utf-8");
 
-  console.log(`\nบันทึกรายงานแล้วที่:\n- ${jsonPath}\n- ${mdPath}`);
+  console.log(`\nบันทึกรายงานไว้ที่:\n- ${jsonPath}\n- ${mdPath}`);
 }
 
 main().catch((err) => {

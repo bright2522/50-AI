@@ -1,7 +1,7 @@
 {
-  "name": "50-ai-persona-review-engine",
+  "name": "snap-persona-review-engine",
   "version": "1.0.0",
-  "description": "ให้ AI 50 บุคลิกเข้าไปทดลองใช้เว็บไซต์/แอปจริง แล้วให้ feedback ในมุมมองของแต่ละคน",
+  "description": "Snap: ให้ผู้ใช้จำลอง 50 แบบลองเว็บจริง แล้วเขียนความเห็นกลับมา",
   "type": "module",
   "main": "persona-review.mjs",
   "scripts": {
