@@ -158,7 +158,11 @@ async function callModel(apiKey, prompt) {
     });
     pick = (d) => d.choices?.[0]?.message?.content;
   }
-  if (!res.ok) throw new Error(`${res.status}: ${(await res.text()).slice(0, 160)}`);
+  if (!res.ok) {
+    const err = new Error(`${res.status}: ${(await res.text()).slice(0, 160)}`);
+    err.status = res.status;
+    throw err;
+  }
   return pick(await res.json()) ?? "(ไม่มีข้อความตอบกลับ)";
 }
 
@@ -189,7 +193,18 @@ $("runBtn").onclick = async () => {
       if (m) card.querySelector(".score").textContent = `${m[1]}/5`;
       card.querySelector("p").textContent = text.replace(/\n*คะแนน:.*$/s, "").trim();
     } catch (e) {
-      card.querySelector("p").textContent = `มีปัญหา: ${e.message}`;
+      const friendly = {
+        401: "key ไม่ถูกต้อง ลองเช็คว่าคัดลอกครบ และเป็น key ของค่ายที่ถูกต้อง",
+        403: "key นี้ไม่มีสิทธิ์ใช้งาน ลองเช็คสิทธิ์หรือยอดเงินในบัญชี",
+        429: "ใช้ถี่เกินหรือโควตาหมด รอสักครู่หรือเช็คยอดเงินในบัญชี",
+      }[e.status];
+      if (friendly && e.status !== 429) {
+        card.remove();
+        status.textContent = friendly;
+        $("runBtn").disabled = false;
+        return; // key ผิด ไม่ต้องลองต่อกับคนอื่น
+      }
+      card.querySelector("p").textContent = `มีปัญหา: ${friendly || e.message}`;
     }
   }
   status.textContent = `เสร็จแล้ว ทั้ง ${list.length} คน`;
