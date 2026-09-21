@@ -10,6 +10,7 @@
 //   3. ตั้งค่า API key อย่างใดอย่างหนึ่ง (Claude หรือ OpenAI):
 //        set ANTHROPIC_API_KEY=sk-ant-...     (Windows)   export ANTHROPIC_API_KEY=sk-ant-...  (macOS/Linux)
 //        set OPENAI_API_KEY=sk-...            (Windows)   export OPENAI_API_KEY=sk-...         (macOS/Linux)
+//      ค่ายอื่น (Gemini, Groq, OpenRouter, Ollama ฯลฯ): ตั้ง LLM_BASE_URL, LLM_MODEL, LLM_API_KEY
 //   4. node persona-review.mjs https://example.com
 //
 // ผลลัพธ์จะถูกบันทึกไว้ที่ ./reports/<โดเมน>-<เวลา>.json และ .md
@@ -92,13 +93,17 @@ function makeModel() {
       return m.content[0].text;
     };
   }
+  // ค่ายอื่น: ตั้ง LLM_BASE_URL (.../chat/completions), LLM_MODEL, LLM_API_KEY  (ไม่ตั้ง = ใช้ OpenAI)
+  const url = process.env.LLM_BASE_URL || "https://api.openai.com/v1/chat/completions";
+  const model = process.env.LLM_MODEL || "gpt-4o-mini";
+  const key = process.env.LLM_API_KEY || process.env.OPENAI_API_KEY;
   return async (prompt) => {
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+    const res = await fetch(url, {
       method: "POST",
-      headers: { "content-type": "application/json", authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
+      headers: { "content-type": "application/json", ...(key && { authorization: `Bearer ${key}` }) },
       body: JSON.stringify({
-        model: "gpt-4o-mini",
-        max_completion_tokens: 400,
+        model,
+        max_tokens: 400,
         messages: [{ role: "user", content: prompt }],
       }),
     });
@@ -117,8 +122,8 @@ async function main() {
     console.error("ใช้งาน: node persona-review.mjs <URL>");
     process.exit(1);
   }
-  if (!process.env.ANTHROPIC_API_KEY && !process.env.OPENAI_API_KEY) {
-    console.error("ตั้งค่า ANTHROPIC_API_KEY หรือ OPENAI_API_KEY ก่อนรันนะ");
+  if (!process.env.ANTHROPIC_API_KEY && !process.env.OPENAI_API_KEY && !process.env.LLM_BASE_URL) {
+    console.error("ตั้งค่า ANTHROPIC_API_KEY, OPENAI_API_KEY หรือ LLM_BASE_URL ก่อนรันนะ");
     process.exit(1);
   }
 

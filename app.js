@@ -120,18 +120,43 @@ function buildPrompt(p, url, content) {
 ตอบเป็นภาษาไทยที่พูดกันตามปกติ ไม่ต้องเป็นทางการ ลงท้ายด้วยบรรทัด "คะแนน: X/5"`;
 }
 
-// เดาค่ายจากหน้าตาของ key: sk-ant-... = Claude, sk-... = OpenAI
+// ค่ายที่รู้จัก: ค่ายส่วนใหญ่รับรูปแบบเดียวกับ OpenAI (chat/completions) ยกเว้น Claude
+const PROVIDERS = {
+  anthropic: { name: "Claude", url: "https://api.anthropic.com/v1/messages", model: "claude-sonnet-4-5-20250929" },
+  openai: { name: "OpenAI", url: "https://api.openai.com/v1/chat/completions", model: "gpt-4o-mini" },
+  gemini: { name: "Gemini", url: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", model: "gemini-2.0-flash" },
+  openrouter: { name: "OpenRouter", url: "https://openrouter.ai/api/v1/chat/completions", model: "openai/gpt-4o-mini" },
+  groq: { name: "Groq", url: "https://api.groq.com/openai/v1/chat/completions", model: "llama-3.3-70b-versatile" },
+  deepseek: { name: "DeepSeek", url: "https://api.deepseek.com/chat/completions", model: "deepseek-chat" },
+};
+
+// เดาค่ายจากหน้าตาของ key (ถ้าเดาไม่ได้ให้เลือกเอง)
 function detectProvider(key) {
   if (key.startsWith("sk-ant-")) return "anthropic";
+  if (key.startsWith("sk-or-")) return "openrouter";
+  if (key.startsWith("gsk_")) return "groq";
+  if (key.startsWith("AIza")) return "gemini";
   if (key.startsWith("sk-")) return "openai";
   return null;
 }
 
-async function callModel(apiKey, prompt) {
-  const provider = detectProvider(apiKey);
+// สรุปว่าจะเรียกที่ไหน ด้วยโมเดลอะไร (คืน null ถ้าข้อมูลยังไม่พอ)
+function resolveTarget(apiKey) {
+  const choice = $("provider").value;
+  if (choice === "custom") {
+    const url = $("baseUrl").value.trim();
+    const model = $("modelName").value.trim();
+    return url && model ? { name: "ค่ายที่ระบุ", url, model, anthropic: false } : null;
+  }
+  const id = choice === "auto" ? detectProvider(apiKey) : choice;
+  const p = PROVIDERS[id];
+  return p ? { ...p, anthropic: id === "anthropic" } : null;
+}
+
+async function callModel(apiKey, prompt, target) {
   let res, pick;
-  if (provider === "anthropic") {
-    res = await fetch("https://api.anthropic.com/v1/messages", {
+  if (target.anthropic) {
+    res = await fetch(target.url, {
       method: "POST",
       headers: {
         "content-type": "application/json",
@@ -139,22 +164,16 @@ async function callModel(apiKey, prompt) {
         "anthropic-version": "2023-06-01",
         "anthropic-dangerous-direct-browser-access": "true",
       },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-5-20250929",
-        max_tokens: 350,
-        messages: [{ role: "user", content: prompt }],
-      }),
+      body: JSON.stringify({ model: target.model, max_tokens: 350, messages: [{ role: "user", content: prompt }] }),
     });
     pick = (d) => d.content?.[0]?.text;
   } else {
-    res = await fetch("https://api.openai.com/v1/chat/completions", {
+    const headers = { "content-type": "application/json" };
+    if (apiKey) headers.authorization = "Bearer " + apiKey;
+    res = await fetch(target.url, {
       method: "POST",
-      headers: { "content-type": "application/json", authorization: "Bearer " + apiKey },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        max_completion_tokens: 350,
-        messages: [{ role: "user", content: prompt }],
-      }),
+      headers,
+      body: JSON.stringify({ model: target.model, max_tokens: 350, messages: [{ role: "user", content: prompt }] }),
     });
     pick = (d) => d.choices?.[0]?.message?.content;
   }
@@ -166,6 +185,17 @@ async function callModel(apiKey, prompt) {
   return pick(await res.json()) ?? "(ไม่มีข้อความตอบกลับ)";
 }
 
+// แสดงช่องกรอกเพิ่มเมื่อเลือก "ค่ายอื่น"
+$("provider").onchange = () => {
+  const custom = $("provider").value === "custom";
+  $("customBox").hidden = !custom;
+  const p = PROVIDERS[$("provider").value];
+  $("providerHint").textContent = custom
+    ? "ใส่ URL แบบ .../chat/completions และชื่อโมเดล ถ้าเป็นโมเดลในเครื่อง (เช่น Ollama) เว้นช่อง key ว่างได้"
+    : p ? `จะเรียก ${p.name} ด้วยโมเดล ${p.model}`
+    : "ใช้ได้กับค่ายที่รับรูปแบบเดียวกับ OpenAI เกือบทุกค่าย key ใช้ในเบราว์เซอร์นี้เท่านั้น ไม่ถูกเก็บ และส่งไปที่ค่ายที่เลือกเท่านั้น";
+};
+
 $("runBtn").onclick = async () => {
   const apiKey = $("apiKey").value.trim();
   const url = $("url").value.trim();
@@ -173,8 +203,14 @@ $("runBtn").onclick = async () => {
   const status = $("status");
   if (selected.size === 0) return (status.textContent = "กรุณาเลือกอย่างน้อย 1 คนก่อนนะ");
   if (!content) return (status.textContent = "ช่วยเล่าหน่อยว่าหน้าเว็บที่จะทดสอบเป็นยังไง");
-  if (!apiKey) return (status.textContent = "ใส่ API key ก่อนนะ");
-  if (!detectProvider(apiKey)) return (status.textContent = "key ต้องขึ้นต้นด้วย sk-ant- (Claude) หรือ sk- (OpenAI)");
+  const custom = $("provider").value === "custom";
+  if (!apiKey && !custom) return (status.textContent = "ใส่ API key ก่อนนะ");
+  const target = resolveTarget(apiKey);
+  if (!target) {
+    return (status.textContent = custom
+      ? "ใส่ URL และชื่อโมเดลของค่ายที่ใช้ให้ครบก่อนนะ"
+      : "เดาค่ายจาก key นี้ไม่ได้ ช่วยเลือกค่าย AI จากรายการด้านบนหน่อย");
+  }
 
   const list = personas.filter((p) => selected.has(p.id));
   const results = $("results");
@@ -188,13 +224,13 @@ $("runBtn").onclick = async () => {
     card.innerHTML = `<header><h4>${p.name}</h4><span class="score"></span></header><p>กำลังลองใช้...</p>`;
     results.appendChild(card);
     try {
-      const text = await callModel(apiKey, buildPrompt(p, url, content));
+      const text = await callModel(apiKey, buildPrompt(p, url, content), target);
       const m = text.match(/คะแนน:\s*(\d)/);
       if (m) card.querySelector(".score").textContent = `${m[1]}/5`;
       card.querySelector("p").textContent = text.replace(/\n*คะแนน:.*$/s, "").trim();
     } catch (e) {
       const friendly = {
-        401: "key ไม่ถูกต้อง ลองเช็คว่าคัดลอกครบ และเป็น key ของค่ายที่ถูกต้อง",
+        401: "key ไม่ถูกต้อง ลองเช็คว่าคัดลอกครบ และเลือกค่ายให้ตรงกับ key",
         403: "key นี้ไม่มีสิทธิ์ใช้งาน ลองเช็คสิทธิ์หรือยอดเงินในบัญชี",
         429: "ใช้ถี่เกินหรือโควตาหมด รอสักครู่หรือเช็คยอดเงินในบัญชี",
       }[e.status];
